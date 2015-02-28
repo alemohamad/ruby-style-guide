@@ -38,7 +38,7 @@ refleje los usos del mundo real es utilizada, y una guía de estilo que se aferr
 a un ideal que ha sido rechazado por las personas supone que lo mejor es no
 utilizarla para nada &ndash; no importa lo bueno que sea.
 
-La guía está dividida en varias secciones de de reglas relacionadas. Intenté
+La guía está dividida en varias secciones de reglas relacionadas. Intenté
 agregar la racionalización de las normas (si está omitido asumí que es bastante
 obvio).
 
