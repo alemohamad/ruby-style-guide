@@ -609,7 +609,7 @@ Traducciones de esta guía están disponibles en los siguientes idiomas:
   num = 0D1234
   num = 0d1234
 
-  # bien - es facil separar los prefijos de los numeros
+  # bien - es fácil separar los prefijos de los numeros
   num = 0o1234
   num = 0x12AB
   num = 0b10101
@@ -652,6 +652,23 @@ Nunca uses `::` para la invocación de métodos.
     SomeModule::SomeClass()
     ```
 
+* <a name="colon-method-definition"></a>
+    No uses `::` para definir métodos de clase.
+
+  ```ruby
+  # nal
+  class Foo
+    def self::some_method
+    end
+  end
+
+  # bien
+  class Foo
+    def self.some_method
+    end
+  end
+  ```
+
 * Usa `def` con paréntesis cuando tengas argumentos. Omite los
   paréntesis cuando el método no acepta ningún argumento.
 
@@ -676,6 +693,182 @@ Nunca uses `::` para la invocación de métodos.
        # body omitted
      end
      ```
+
+
+* <a name="method-invocation-parens"></a>
+  Usa paréntesis alrededor de los argumentos para la invocación de un método,
+  especialmente si el primer argumento empieza con un paréntesis abierto `(`,
+  como por ejemplo: `f((3 + 2) + 1)`.
+
+  ```ruby
+  # mal
+  x = Math.sin y
+  # bien
+  x = Math.sin(y)
+
+  # mal
+  array.delete e
+  # bien
+  array.delete(e)
+
+  # mal
+  temperance = Person.new 'Temperance', 30
+  # bien
+  temperance = Person.new('Temperance', 30)
+  ```
+
+  Omite siempre los paréntesis para:
+
+  * Métodos sin argumentos:
+
+    ```ruby
+    # mal
+    Kernel.exit!()
+    2.even?()
+    fork()
+    'test'.upcase()
+
+    # bien
+    Kernel.exit!
+    2.even?
+    fork
+    'test'.upcase
+    ```
+
+  * Métodos que son parte de un DSL interno (por ejemplo: Rake, Rails, RSpec):
+
+    ```ruby
+    # mal
+    validates(:name, presence: true)
+    # bien
+    validates :name, presence: true
+    ```
+
+  * Métodos que son palabras claves en Ruby:
+
+    ```ruby
+    class Person
+      # mal
+      attr_reader(:name, :age)
+      # bien
+      attr_reader :name, :age
+
+      # body omitted
+    end
+    ```
+
+  Puedes omitir los paréntesis para:
+
+  * Métodos que tienen el grado de palabras reservada (`keyword`) en ruby, pero que no declaran nada. Ejemplo:
+
+    ```Ruby
+    # bien
+    puts(temperance.age)
+    system('ls')
+    # bien también
+    puts temperance.age
+    system 'ls'
+    ```
+
+* <a name="optional-arguments"></a>
+    Define los argumentos opcionales de un método, al final de la lista de argumentos.
+    Ruby tiene algunos resultados inesperados cuando los argumentos opcionales estan al principio de la lista de argumentos.
+
+  ```ruby
+  # mal
+  def some_method(a = 1, b = 2, c, d)
+    puts "#{a}, #{b}, #{c}, #{d}"
+  end
+
+  some_method('w', 'x') # => '1, 2, w, x'
+  some_method('w', 'x', 'y') # => 'w, 2, x, y'
+  some_method('w', 'x', 'y', 'z') # => 'w, x, y, z'
+
+  # bien
+  def some_method(c, d, a = 1, b = 2)
+    puts "#{a}, #{b}, #{c}, #{d}"
+  end
+
+  some_method('w', 'x') # => '1, 2, w, x'
+  some_method('w', 'x', 'y') # => 'y, 2, w, x'
+  some_method('w', 'x', 'y', 'z') # => 'y, z, w, x'
+  ```
+
+* <a name="parallel-assignment"></a>
+    Evita el uso de asignaciones en paralelo para la definición de variables. 
+    La asignacion en paralelo es permitida cuando es el resultado de un metodo llamado con anterioridad.
+    Es permitido la asignación en paralelo cuando se usa el operador splat (* antes de una variable) o intercambiar una variable (swap). 
+    La asignacion paralela es mas dificil de leer que una asignación separada.
+
+  ```ruby
+  # mal
+  a, b, c, d = 'foo', 'bar', 'baz', 'foobar'
+
+  # bien
+  a = 'foo'
+  b = 'bar'
+  c = 'baz'
+  d = 'foobar'
+
+  # bien - intercambiando una variable
+  # El Swapping de variables o intercambio de variables es un caso especial
+  # debido a que permite intercambiar el valor de 2 variables
+  a = 'foo'
+  b = 'bar'
+
+  a, b = b, a
+  puts a # => 'bar'
+  puts b # => 'foo'
+
+  # bien - usando el valor de retorno de un metodo
+  # en este caso retorna mas de 1 valor
+  def multi_return
+    [1, 2]
+  end
+
+  first, second = multi_return
+
+  # bien - usando el operador splat (*)
+  first, *list = [1, 2, 3, 4] # first => 1, list => [2, 3, 4]
+
+  hello_array = *'Hello' # => ["Hello"]
+
+  a = *(1..3) # => [1, 2, 3]
+  ```
+
+* <a name="trailing-underscore-variables"></a>
+  Evita el uso innecesario de la variable `_` durante la asignación paralela.
+  Variables nombradas con un guión bajo `_` al principio del nombre son preferidas a solo usar un guión bajo `_`.
+  Usa guión bajo `_` solamente en combinacion con con una variable `splat` definida a lado izquierdo de la asignación
+  y sólo si la variable splat no tiene ningun guión bajo `_` al principio del nombre.
+
+  ```ruby
+  # mal
+  foo = 'one,two,three,four,five'
+  # Asignación Innecesaria. No agrega ninguna información útil
+  first, second, _ = foo.split(',')
+  first, _, _ = foo.split(',')
+  first, *_ = foo.split(',')
+
+
+  # bien
+  foo = 'one,two,three,four,five'
+  # el guión bajo es necesario para mostrar que se quiere obtener 
+  # todos los elementos exceptuando el último
+  *beginning, _ = foo.split(',')
+  *beginning, something, _ = foo.split(',')
+
+  # sólo el primer elemento
+  a, = foo.split(',')
+  # sólo los 2 primeros elementos
+  a, b, = foo.split(',')
+
+  # Asignación innecesaria en una variable que no se usará, pero 
+  # esta asignación provee unformación útil
+  first, _second = foo.split(',')
+  first, _second, = foo.split(',')
+  first, *_ending = foo.split(',')
+  ```
 
 * Nunca uses `for`, a menos que sepas exactamente para qué lo usás. En su
   lugar deberías usar los iteradores la mayor parte del tiempo. `for` se
@@ -793,13 +986,13 @@ Nunca uses `::` para la invocación de métodos.
     ```Ruby
     # mal
     x = 'test'
-    # obscure nil check
+    # Analizando si la variable es nil
     if !!x
       # body omitted
     end
 
     x = false
-    # double negation is useless on booleans
+    # La doble negación no funciona con variables boleanas
     !!x # => false
 
     # bien
@@ -847,10 +1040,40 @@ Nunca uses `::` para la invocación de métodos.
     do_something if some_condition
 
     # otra buena opción
+    # Usando control de flujos
     some_condition && do_something
     ```
 
-* Favorecé `unless` por sobre `if` para condiciones negativas (o control
+* <a name="no-multiline-if-modifiers"></a>
+  Evita el uso de modificadores `if`/`unless` al final de un bloque que se compone con mas de una lineal.
+
+  ```ruby
+  # mal
+  10.times do
+    # multi-line body omitted
+  end if some_condition
+
+  # bien
+  if some_condition
+    10.times do
+      # multi-line body omitted
+    end
+  end
+  ```
+
+* <a name="no-nested-modifiers"></a>
+  Evita el sudo de modificadores `if`/`unless`/`while`/`until` de forma anidada. 
+  Mejor usa apropiadamente `&&`/`||` if.
+
+  ```ruby
+  # mal
+  do_something if other_condition if some_condition
+
+  # bien
+  do_something if some_condition && other_condition
+  ```
+
+* Favorece `unless` por sobre `if` para condiciones negativas (o control
   de flujo con `||`).
 
     ```Ruby
@@ -864,6 +1087,7 @@ Nunca uses `::` para la invocación de métodos.
     do_something unless some_condition
 
     # otra buena opción
+    # Usando control de flujos
     some_condition || do_something
     ```
 
@@ -899,7 +1123,7 @@ Nunca uses `::` para la invocación de métodos.
     end
     ```
 
-* Nunca uses `while/until condition do` para un `while/until` multilínea.
+* Nunca uses `while/until` condition `do` para un `while/until` multilínea.
 
     ```Ruby
     # mal
@@ -944,8 +1168,28 @@ Nunca uses `::` para la invocación de métodos.
     do_something until some_condition
     ```
 
+* <a name="infinite-loop"></a>
+  Usa `Kernel#loop` en vez de `while/until` cuando necesites un ciclo infinito.
+
+    ```ruby
+    # mal
+    while true
+      do_something
+    end
+
+    until false
+      do_something
+    end
+
+    # bien
+    loop do
+      do_something
+    end
+    ```
+
+
 * Usa `Kernel#loop` con break en lugar de `begin/end/until` o `begin/end/while`
-  para validar al final de cada loop.
+  para validar al final de cada ciclo.
 
    ```Ruby
    # mal
@@ -1010,21 +1254,16 @@ Nunca uses `::` para la invocación de métodos.
     end
     ```
 
-* Omite los paréntesis para llamadas a métodos sin argumentos.
+* <a name="single-action-blocks"></a>
+  Usa la invocación de procesos cuando solo realices una operacion en un bloque
 
-    ```Ruby
-    # mal
-    Kernel.exit!()
-    2.even?()
-    fork()
-    'test'.upcase()
+  ```ruby
+  # mal
+  names.map { |name| name.upcase }
 
-    # bien
-    Kernel.exit!
-    2.even?
-    fork
-    'test'.upcase
-    ```
+  # bien
+  names.map(&:upcase)
+  ```
 
 * Elige `{...}` por sobre `do...end` para bloques de una línea. Evita
   el uso de `{...}` para bloques multilíneas (encadenamiento de multilínea
@@ -1049,7 +1288,7 @@ Nunca uses `::` para la invocación de métodos.
     end.map { |name| name.upcase }
 
     # bien
-    names.select { |name| name.start_with?('S') }.map { |name| name.upcase }
+    names.select { |name| name.start_with?('S') }.map(&:upcase)
     ```
 
     Puede ser que algunas personas piensen que el encadenamiento en multilínea se vería bien con
@@ -1145,11 +1384,31 @@ Nunca uses `::` para la invocación de métodos.
       ...
     end
     ```
+* <a name="self-assignment"></a>
+  Usa las abreviaturas para asignar valores después de una operación.
+
+  ```ruby
+  # mal
+  x = x + y
+  x = x * y
+  x = x**y
+  x = x / y
+  x = x || y
+  x = x && y
+
+  # bien
+  x += y
+  x *= y
+  x **= y
+  x /= y
+  x ||= y
+  x &&= y
+  ```
 
 * Usa `||=` libremente para inicializar variables.
 
     ```Ruby
-    # set name to Bozhidar, only if it's nil or false
+    # asigna el nombre Bozhidar, solo si la variable 'name' es nil o false
     name ||= 'Bozhidar'
     ```
 
@@ -1163,6 +1422,30 @@ pasaría si el valor actual fuese `false`.)
     # bien
     enabled = true if enabled.nil?
     ```
+
+* <a name="double-amper-preprocess"></a>
+  Usa `&&=` para preprocesar variables que pueden no existir.
+  Usando `&&=` cambiarás el valor de la variable, solo si existe, 
+  eliminando la necesidad de comprobar su existencia usando un `if`.
+
+  ```ruby
+  # mal
+  if something
+    something = something.downcase
+  end
+
+  # mal
+  something = something ? something.downcase : nil
+
+  # ok
+  something = something.downcase if something
+
+  # bien
+  something = something && something.downcase
+
+  # mejor
+  something &&= something.downcase
+  ```
 
 * Evita el uso explícito del operador de igualdad idéntica `===`.
   Como su nombre indica, está destinado a ser utilizado
@@ -1180,6 +1463,21 @@ pasaría si el valor actual fuese `false`.)
     (1..100).include?(7)
     some_string =~ /something/
     ```
+* <a name="eql"></a>
+  No uses `eql?` cuando puedes usar `==`. 
+  El comparador de semantica estricto ofrecido por `eql?` 
+  es raramente necesitado en la práctica.
+
+  ```ruby
+  # mal - eql? es lo mismo que == para strings
+  'ruby'.eql? some_str
+
+  # bien
+  'ruby' == some_str
+
+  # eql? tiene sentido aqui, si se quiere diferenciar entre Integer y Float 1
+  1.0.eql? x 
+  ```
 
 * Evita usar variables especiales de tipo Perl (como `$:`, `$;`, etc.). Son bastante crípticas y su uso en cualquier lugar excepto scripts de una línea está desalentado. Usa los alias amigables para humanos proporcionados por la librería `English`.
 
@@ -1209,6 +1507,37 @@ pasaría si el valor actual fuese `false`.)
 * Siempre ejecutá el intérprete de Ruby con la opción `-w`, para que
 avise si se olvida alguna de las reglas anteriores!
 
+* <a name="no-nested-methods"></a>
+  No uses métodos anidados, mejor usa las funciones lambda.
+  Los métodos anidados actualmente producen métodos en el mismo ámbito (ejemplo: clases)
+  Ademas el método anidado será redefinido cada vez que se llame al metodo que lo contiene.
+
+  ```ruby
+  # mal
+  def foo(x)
+    def bar(y)
+      # body omitted
+    end
+
+    bar(x)
+  end
+
+  # bien - aunque es igual a lo anterior, la mejora es que 'bar' no será redefinido cada vez que se llame 'foo'
+  def bar(y)
+    # body omitted
+  end
+
+  def foo(x)
+    bar(x)
+  end
+
+  # bien tambíen
+  def foo(x)
+    bar = ->(y) { ... }
+    bar.call(x)
+  end
+  ``
+
 * Usa la nueva sintaxis de lambda literal para bloques de una sola línea.
   Usa el método `lambda` para bloques multilínea.
 
@@ -1223,15 +1552,37 @@ avise si se olvida alguna de las reglas anteriores!
       tmp * b / 50
     end
 
-    # bien
+    # bien - una sola linea
     l = ->(a, b) { a + b }
     l.call(1, 2)
 
+    # bien - bloque multilinea
     l = lambda do |a, b|
       tmp = a * 7
       tmp * b / 50
     end
     ```
+* <a name="stabby-lambda-with-args"></a>
+  No omitas los parentesis cuando estas definiendo una función lambda que utiliza parámetros.
+
+  ```ruby
+  # mal
+  l = ->x, y { something(x, y) }
+
+  # bien
+  l = ->(x, y) { something(x, y) }
+  ```
+
+* <a name="stabby-lambda-no-args"></a>
+  Omite los paréntesis si tu función lambda no necesita parámetros.
+
+  ```ruby
+  # mal
+  l = ->() { something }
+
+  # bien
+  l = -> { something }
+  ```
 
 * Elige `proc` por sobre `Proc.new`.
 
