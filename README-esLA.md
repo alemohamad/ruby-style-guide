@@ -659,7 +659,7 @@ Nunca uses `::` para la invocación de métodos.
     No uses `::` para definir métodos de clase.
 
   ```ruby
-  # nal
+  # mal
   class Foo
     def self::some_method
     end
